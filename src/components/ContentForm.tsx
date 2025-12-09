@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { getDayOfWeek } from "@/lib/utils";
 
 interface ContentFormProps {
   onSuccess?: () => void;
@@ -22,7 +23,7 @@ const ContentForm = ({ onSuccess, mode }: ContentFormProps) => {
     objective: "",
     feed_theme: "",
     approved_guidelines: "indefinido" as "indefinido" | "aprovado" | "rejeitado" | "pendente",
-    content_capture: "s_necessidade" as "s_necessidade" | "pela_agencia" | "pelo_cliente",
+    capture_responsible: "s_necessidade" as "s_necessidade" | "pela_agencia" | "pelo_cliente",
     content_status: "pendente" as "pendente" | "em_producao" | "aguardando_aprovacao" | "aprovado" | "rejeitado" | "publicado",
     caption: "",
     content_body: "",
@@ -40,10 +41,18 @@ const ContentForm = ({ onSuccess, mode }: ContentFormProps) => {
 
       const { data } = await supabase
         .from('profiles')
-        .select('id, display_name, email')
+        .select('user_id, display_name, email')
         .neq('role', 'agencia'); // Fetch all non-agency users (clients)
 
-      if (data) setClients(data);
+      if (data) {
+        // Map the data to use user_id as id for the component
+        const formattedData = data.map(client => ({
+          id: client.user_id,
+          display_name: client.display_name,
+          email: client.email
+        }));
+        setClients(formattedData);
+      }
     };
 
     fetchClients();
@@ -54,13 +63,25 @@ const ContentForm = ({ onSuccess, mode }: ContentFormProps) => {
     if (!user) return;
 
     setLoading(true);
+
+    if (isAgency && !formData.client_id) {
+      toast({
+        title: "Erro no formulário",
+        description: "Por favor, selecione um cliente para este conteúdo.",
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
+    }
+
     try {
       const payload: any = {
         date: formData.date,
         feed_theme: formData.feed_theme,
         user_id: user.id, // Creator
         client_id: isAgency ? formData.client_id : user.id, // Assigned Client
-        day_of_week: getDayOfWeek(formData.date)
+        day_of_week: getDayOfWeek(formData.date),
+        capture_responsible: formData.capture_responsible
       };
 
       if (mode === 'theme') {
@@ -72,7 +93,7 @@ const ContentForm = ({ onSuccess, mode }: ContentFormProps) => {
       } else {
         // Content mode
         payload.content_type = formData.content_type;
-        payload.content_capture = formData.content_capture;
+        // capture_responsible is already in payload from defaults if we want, or from form data
         payload.caption = formData.caption;
         payload.content_body = formData.content_body;
         payload.content_status = formData.content_status;
@@ -97,7 +118,7 @@ const ContentForm = ({ onSuccess, mode }: ContentFormProps) => {
         objective: "",
         feed_theme: "",
         approved_guidelines: "indefinido",
-        content_capture: "s_necessidade",
+        capture_responsible: "s_necessidade",
         content_status: "pendente",
         caption: "",
         content_body: "",
@@ -204,6 +225,20 @@ const ContentForm = ({ onSuccess, mode }: ContentFormProps) => {
                     </SelectContent>
                   </Select>
                 </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="capture_responsible">Captação do Conteúdo</Label>
+                  <Select value={formData.capture_responsible} onValueChange={(value: any) => handleInputChange('capture_responsible', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tipo de captação" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="s_necessidade">S/ Necessidade</SelectItem>
+                      <SelectItem value="pela_agencia">Pela Acod</SelectItem>
+                      <SelectItem value="pelo_cliente">Pelo Cliente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </>
             )}
 
@@ -219,20 +254,6 @@ const ContentForm = ({ onSuccess, mode }: ContentFormProps) => {
                       <SelectItem value="estatico">Estático</SelectItem>
                       <SelectItem value="carrossel">Carrossel</SelectItem>
                       <SelectItem value="reels">Reels</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="content_capture">Captação do Conteúdo</Label>
-                  <Select value={formData.content_capture} onValueChange={(value) => handleInputChange('content_capture', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Tipo de captação" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="s_necessidade">S/ Necessidade</SelectItem>
-                      <SelectItem value="pela_agencia">Pela Acod</SelectItem>
-                      <SelectItem value="pelo_cliente">Pelo Cliente</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -284,7 +305,6 @@ const ContentForm = ({ onSuccess, mode }: ContentFormProps) => {
               </div>
             </>
           )}
-
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Criando..." : (mode === 'theme' ? "Criar Tema" : "Criar Conteúdo")}
           </Button>
@@ -293,5 +313,7 @@ const ContentForm = ({ onSuccess, mode }: ContentFormProps) => {
     </Card>
   );
 };
+
+
 
 export default ContentForm;
