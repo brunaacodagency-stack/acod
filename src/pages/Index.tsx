@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
 import ContentForm from "@/components/ContentForm";
 import ContentTable from "@/components/ContentTable";
+import UserManagement from "@/components/UserManagement";
 import { LogOut, Plus, List } from "lucide-react";
 
 const Index = () => {
@@ -61,10 +62,13 @@ const Index = () => {
                 {isAgency ? 'Acesso completo da agência' : 'Acesso de cliente para aprovações'}
               </p>
             </div>
-            <Button variant="outline" onClick={handleSignOut}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Sair
-            </Button>
+            <div className="flex gap-2">
+              {isAgency && <UserManagement />}
+              <Button variant="outline" onClick={handleSignOut}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Sair
+              </Button>
+            </div>
           </div>
         </div>
       </header>

@@ -1,4 +1,4 @@
-ALTER TABLE public.contents ADD COLUMN client_id uuid REFERENCES auth.users(id);
+ttALTER TABLE public.contents ADD COLUMN client_id uuid REFERENCES auth.users(id);
 -- Enable filtering by client_id automatically for clients
 ALTER POLICY "Enable read access for all users" ON "public"."contents"
 USING (
