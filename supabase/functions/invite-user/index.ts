@@ -28,7 +28,7 @@ serve(async (req) => {
                 role: role || 'cliente',
                 display_name: display_name || ''
             },
-            redirectTo: `${req.headers.get('origin')}/auth?setup_password=true`
+            redirectTo: 'https://acod.vercel.app/auth?setup_password=true'
         })
 
         if (error) throw error
