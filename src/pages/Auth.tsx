@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,11 +10,29 @@ import { useNavigate } from "react-router-dom";
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("cliente");
+  const [newPassword, setNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [resetPassword, setResetPassword] = useState(false);
+  const [view, setView] = useState<"sign_in" | "sign_up" | "reset_password" | "update_password">("sign_in");
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth event:", event);
+      if (event === "PASSWORD_RECOVERY") {
+        setView("update_password");
+      } else if (event === "SIGNED_IN") {
+        // If we are not updating password, redirect to home
+        if (view !== "update_password") {
+          navigate("/");
+        }
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate, view]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,10 +44,6 @@ const Auth = () => {
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            role: role,
-            display_name: email.split('@')[0]
-          }
         }
       });
 
@@ -62,11 +76,6 @@ const Auth = () => {
 
       if (error) throw error;
 
-      toast({
-        title: "Login realizado!",
-        description: "Bem-vindo ao Sistema de Aprovação Acod.",
-      });
-
       navigate("/");
     } catch (error: any) {
       toast({
@@ -94,7 +103,7 @@ const Auth = () => {
         title: "Email enviado!",
         description: "Verifique seu email para redefinir a senha.",
       });
-      setResetPassword(false);
+      setView("sign_in");
     } catch (error: any) {
       toast({
         title: "Erro ao enviar email",
@@ -103,6 +112,128 @@ const Auth = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Senha atualizada!",
+        description: "Sua senha foi alterada com sucesso.",
+      });
+      navigate("/");
+    } catch (error: any) {
+      toast({
+        title: "Erro ao atualizar senha",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderForm = () => {
+    switch (view) {
+      case "reset_password":
+        return (
+          <form onSubmit={handleResetPassword} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="reset-email">Email</Label>
+              <Input
+                id="reset-email"
+                type="email"
+                placeholder="seu@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Enviando..." : "Enviar link de recuperação"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => setView("sign_in")}
+            >
+              Voltar ao login
+            </Button>
+          </form>
+        );
+
+      case "update_password":
+        return (
+          <form onSubmit={handleUpdatePassword} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-password">Nova Senha</Label>
+              <Input
+                id="new-password"
+                type="password"
+                placeholder="Sua nova senha"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Atualizando..." : "Atualizar Senha"}
+            </Button>
+          </form>
+        );
+
+      default: // sign_in
+        return (
+          <div>
+            <form onSubmit={handleSignIn} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Senha</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Sua senha"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Entrando..." : "Entrar"}
+              </Button>
+              <div className="text-center mt-2">
+                <Button
+                  type="button"
+                  variant="link"
+                  className="text-sm text-muted-foreground p-0 h-auto font-normal"
+                  onClick={() => setView("reset_password")}
+                >
+                  Esqueci minha senha
+                </Button>
+              </div>
+            </form>
+          </div>
+        );
     }
   };
 
@@ -116,72 +247,7 @@ const Auth = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {resetPassword ? (
-            <form onSubmit={handleResetPassword} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="reset-email">Email</Label>
-                <Input
-                  id="reset-email"
-                  type="email"
-                  placeholder="seu@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Enviando..." : "Enviar link de recuperação"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => setResetPassword(false)}
-              >
-                Voltar ao login
-              </Button>
-            </form>
-          ) : (
-            <div>
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="seu@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Senha</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Sua senha"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Entrando..." : "Entrar"}
-                </Button>
-                <div className="text-center mt-2">
-                  <Button
-                    type="button"
-                    variant="link"
-                    className="text-sm text-muted-foreground p-0 h-auto font-normal"
-                    onClick={() => setResetPassword(true)}
-                  >
-                    Esqueci minha senha
-                  </Button>
-                </div>
-              </form>
-            </div>
-          )}
+          {renderForm()}
         </CardContent>
       </Card>
     </div>
