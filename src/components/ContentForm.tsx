@@ -97,8 +97,8 @@ const ContentForm = ({ onSuccess, mode }: ContentFormProps) => {
         payload.caption = formData.caption;
         payload.content_body = formData.content_body;
         payload.content_status = formData.content_status;
-        // Assuming content creation might imply guidelines are already set or irrelevant for this specific flow
-        payload.approved_guidelines = 'indefinido';
+        // If creating content directly, we assume the guidelines/theme are implicitly approved or skipped
+        payload.approved_guidelines = 'aprovado';
       }
 
       const { error } = await supabase
