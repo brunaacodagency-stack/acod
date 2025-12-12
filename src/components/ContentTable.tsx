@@ -165,7 +165,8 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
       return matchesMonth;
     } else {
       // Conteúdos: Show only content where the THEME has been APPROVED.
-      // This is the production phase.
+      // Agency sees EVERYTHING to manage workflow.
+      if (isAgency) return matchesMonth;
       return matchesMonth && content.approved_guidelines === 'aprovado';
     }
   });
