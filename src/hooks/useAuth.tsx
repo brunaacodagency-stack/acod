@@ -18,15 +18,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<any | null>(null);
 
-  const fetchUserProfile = async (userId: string) => {
+  const fetchUserProfile = async (userId: string, userEmail?: string) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Error fetching profile:', error);
         return;
       }
@@ -36,18 +36,37 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // TODO: Remove this override when roles are properly set in Supabase
         setUserProfile({ ...data, role: 'agencia' });
       } else {
-        // Create profile if it doesn't exist
-        const { data: newProfile } = await supabase
-          .from('profiles')
-          .insert({
-            user_id: userId,
-            email: user?.email,
-            role: 'cliente'
-          })
-          .select()
-          .single();
+        // If no profile found, try to create one.
+        // We use upsert to be safe against race conditions.
+        // We need the email to be present.
 
-        setUserProfile(newProfile);
+        const emailToUse = userEmail || user?.email;
+
+        // If we don't have an email, we might be too early in the auth flow or it's a reload.
+        // But we should try anyway if we have the ID.
+
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .upsert({
+            user_id: userId,
+            email: emailToUse,
+            role: 'cliente'
+          }, { onConflict: 'user_id' })
+          .select()
+          .maybeSingle();
+
+        if (createError) {
+          // If error is 409 conflict, it means it was created in the split second between the select and the insert.
+          // We can ignore it and fetch again or just let the next re-render handle it.
+          console.log('Profile creation conflict (handled):', createError.message);
+          // Optionally fetch again to get the data
+          const { data: retryData } = await supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle();
+          if (retryData) {
+            setUserProfile({ ...retryData, role: 'agencia' });
+          }
+        } else if (newProfile) {
+          setUserProfile({ ...newProfile, role: 'agencia' });
+        }
       }
     } catch (error) {
       console.error('Error with profile:', error);
@@ -63,7 +82,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         if (session?.user) {
           setTimeout(() => {
-            fetchUserProfile(session.user.id);
+            fetchUserProfile(session.user.id, session.user.email);
           }, 0);
         } else {
           setUserProfile(null);
@@ -78,7 +97,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(session?.user ?? null);
 
       if (session?.user) {
-        fetchUserProfile(session.user.id);
+        fetchUserProfile(session.user.id, session.user.email);
       }
       setLoading(false);
     });

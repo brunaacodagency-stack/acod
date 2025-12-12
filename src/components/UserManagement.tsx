@@ -5,6 +5,7 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
+    DialogDescription,
     DialogTrigger,
 } from "@/components/ui/dialog";
 import {
@@ -233,6 +234,9 @@ export function UserManagement() {
             <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Gerenciamento de Usuários</DialogTitle>
+                    <DialogDescription>
+                        Gerencie os usuários do sistema, adicione novos membros ou atualize permissões.
+                    </DialogDescription>
                 </DialogHeader>
 
                 <div className="flex justify-between items-center mt-4 mb-4">
@@ -247,6 +251,9 @@ export function UserManagement() {
                         <DialogContent>
                             <DialogHeader>
                                 <DialogTitle>Adicionar Novo Usuário</DialogTitle>
+                                <DialogDescription>
+                                    Preencha os dados abaixo para enviar um convite de acesso.
+                                </DialogDescription>
                             </DialogHeader>
                             <div className="space-y-4 py-4">
                                 <div className="space-y-2">
