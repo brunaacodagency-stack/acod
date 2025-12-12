@@ -44,6 +44,7 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
   const { toast } = useToast();
   const { user, userProfile } = useAuth();
   const [rejectDialog, setRejectDialog] = useState<{ isOpen: boolean; id: string | null; reason: string; field: 'content_status' | 'approved_guidelines' }>({ isOpen: false, id: null, reason: '', field: 'content_status' });
+  const [viewObservationsDialog, setViewObservationsDialog] = useState<{ isOpen: boolean; content: string | null }>({ isOpen: false, content: null });
 
   // Check if user has agency access
   const isAgency = userProfile?.role === 'agencia';
@@ -261,6 +262,23 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
         <DialogFooter>
           <Button variant="outline" onClick={() => setRejectDialog({ isOpen: false, id: null, reason: '', field: 'content_status' })}>Cancelar</Button>
           <Button variant="destructive" onClick={confirmReject}>Confirmar Rejeição</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
+  // Reusable Component for Viewing Observations
+  const ViewObservationsDialogComponent = () => (
+    <Dialog open={viewObservationsDialog.isOpen} onOpenChange={(open) => setViewObservationsDialog(prev => ({ ...prev, isOpen: open }))}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Observações & Histórico</DialogTitle>
+        </DialogHeader>
+        <div className="py-4 max-h-[60vh] overflow-y-auto whitespace-pre-wrap text-sm">
+          {viewObservationsDialog.content || "Nenhuma observação registrada."}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setViewObservationsDialog({ isOpen: false, content: null })}>Fechar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
