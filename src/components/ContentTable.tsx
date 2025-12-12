@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, MessageSquare } from "lucide-react";
 
 interface Content {
   id: string;
@@ -386,6 +386,7 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
           </div>
 
           <RejectDialogComponent />
+          <ViewObservationsDialogComponent />
         </>
         {filteredContents.length === 0 && (
           <div className="col-span-full text-center py-12 text-muted-foreground">
@@ -479,6 +480,20 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
                           Reprovar
                         </Button>
                       </div>
+
+                      {/* View Observations Button */}
+                      {content.observations && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="h-7 w-7 p-0"
+                          title="Ver Observações"
+                          onClick={() => setViewObservationsDialog({ isOpen: true, content: content.observations })}
+                        >
+                          <MessageSquare className="h-3 w-3" />
+                        </Button>
+                      )}
+
                       {isAgency && (
                         <Button
                           variant="ghost"
@@ -501,6 +516,7 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
           )}
         </div>
         <RejectDialogComponent />
+        <ViewObservationsDialogComponent />
       </CardContent>
     </Card>
   );
