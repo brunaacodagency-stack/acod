@@ -43,25 +43,23 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
   const [clients, setClients] = useState<Array<{ id: string; email: string; display_name: string }>>([]);
   const { toast } = useToast();
   const { user, userProfile } = useAuth();
-  const [rejectDialog, setRejectDialog] = useState<{ isOpen: boolean; id: string | null; reason: string }>({ isOpen: false, id: null, reason: '' });
+  const [rejectDialog, setRejectDialog] = useState<{ isOpen: boolean; id: string | null; reason: string; field: 'content_status' | 'approved_guidelines' }>({ isOpen: false, id: null, reason: '', field: 'content_status' });
 
   // Check if user has agency access
   const isAgency = userProfile?.role === 'agencia';
 
   // Fetch clients list for agency users
   useEffect(() => {
+    // ... (same as before) ...
     const fetchClients = async () => {
       if (!isAgency) return;
-
       try {
         const { data, error } = await supabase
           .from('profiles')
           .select('user_id, email, display_name')
           .eq('role', 'cliente')
           .order('email');
-
         if (error) throw error;
-
         setClients(data?.map(profile => ({
           id: profile.user_id,
           email: profile.email || 'Sem email',
@@ -71,38 +69,27 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
         console.error('Error fetching clients:', error);
       }
     };
-
     fetchClients();
   }, [isAgency]);
 
   const fetchContents = async () => {
+    // ... (same as before) ...
     if (!user) return;
-
     try {
       let query = supabase
         .from('contents')
         .select('*')
         .order('date', { ascending: false });
-
       if (!isAgency) {
-        // Clients only see content assigned to them
         query = query.eq('client_id', user.id);
       } else if (selectedClient !== 'all') {
-        // Agency can filter by specific client
         query = query.eq('client_id', selectedClient);
       }
-      // If agency and selectedClient is 'all', show all content
-
       const { data, error } = await query;
-
       if (error) throw error;
       setContents(data || []);
     } catch (error: any) {
-      toast({
-        title: "Erro ao carregar conteúdos",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Erro ao carregar conteúdos", description: error.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -113,59 +100,39 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
   }, [user, refreshTrigger, selectedClient]);
 
   const handleStatusUpdate = async (id: string, field: string, value: string) => {
+    // ... (same as before) ...
     try {
       const { error } = await supabase
         .from('contents')
         .update({ [field]: value })
         .eq('id', id);
-
       if (error) throw error;
-
       setContents(prev => prev.map(content =>
         content.id === id ? { ...content, [field]: value } : content
       ));
-
-      toast({
-        title: "Status atualizado!",
-        description: "O conteúdo foi atualizado com sucesso.",
-      });
+      toast({ title: "Status atualizado!", description: "O conteúdo foi atualizado com sucesso." });
     } catch (error: any) {
-      toast({
-        title: "Erro ao atualizar",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Erro ao atualizar", description: error.message, variant: "destructive" });
     }
     setEditingId(null);
     setEditingField(null);
   };
 
   const handleDelete = async (id: string) => {
+    // ... (same as before) ...
     if (!confirm("Tem certeza que deseja excluir este conteúdo?")) return;
-
     try {
-      const { error } = await supabase
-        .from('contents')
-        .delete()
-        .eq('id', id);
-
+      const { error } = await supabase.from('contents').delete().eq('id', id);
       if (error) throw error;
-
       setContents(prev => prev.filter(content => content.id !== id));
-      toast({
-        title: "Conteúdo excluído!",
-        description: "O conteúdo foi removido com sucesso.",
-      });
+      toast({ title: "Conteúdo excluído!", description: "O conteúdo foi removido com sucesso." });
     } catch (error: any) {
-      toast({
-        title: "Erro ao excluir",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
     }
   };
 
   const getStatusBadge = (status: string) => {
+    // ... (same as before) ...
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       pendente: "outline",
       em_producao: "secondary",
@@ -174,29 +141,26 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
       rejeitado: "destructive",
       publicado: "default"
     };
-
     return <Badge variant={variants[status] || "outline"}>{status.replace('_', ' ')}</Badge>;
   };
 
   const getApprovalBadge = (status: string) => {
+    // ... (same as before) ...
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       indefinido: "outline",
       aprovado: "default",
       rejeitado: "destructive",
       pendente: "secondary"
     };
-
     return <Badge variant={variants[status] || "outline"}>{status}</Badge>;
   };
 
   const filteredContents = contents.filter(content => {
+    // ... (same as before) ...
     const matchesMonth = selectedMonth === "all" || (new Date(content.date).getMonth() + 1).toString() === selectedMonth;
-
     if (viewMode === 'themes') {
       return matchesMonth && content.approved_guidelines !== 'indefinido' && content.approved_guidelines !== null;
     } else {
-      // viewMode === 'contents'
-      // Include if 'indefinido' OR null (assuming old data or content-only data might be null)
       return matchesMonth && (content.approved_guidelines === 'indefinido' || content.approved_guidelines === null);
     }
   });
@@ -221,16 +185,12 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
     return <div className="text-center py-4">Carregando conteúdos...</div>;
   }
 
-  // Helper to update caption
+  // Helper to update caption - not used in this snippet but kept for consistency
   const handleCaptionUpdate = async (id: string, newCaption: string) => {
+    // ... (same as before) ...
     try {
-      const { error } = await supabase
-        .from('contents')
-        .update({ caption: newCaption })
-        .eq('id', id);
-
+      const { error } = await supabase.from('contents').update({ caption: newCaption }).eq('id', id);
       if (error) throw error;
-
       setContents(prev => prev.map(c => c.id === id ? { ...c, caption: newCaption } : c));
       toast({ title: "Legenda salva", description: "A legenda foi atualizada." });
     } catch (error: any) {
@@ -257,7 +217,7 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
       const { error } = await supabase
         .from('contents')
         .update({
-          content_status: 'rejeitado',
+          [rejectDialog.field]: 'rejeitado', // Dynamic field update
           observations: newObservations
         })
         .eq('id', rejectDialog.id);
@@ -266,7 +226,7 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
 
       setContents(prev => prev.map(content =>
         content.id === rejectDialog.id
-          ? { ...content, content_status: 'rejeitado', observations: newObservations }
+          ? { ...content, [rejectDialog.field]: 'rejeitado', observations: newObservations }
           : content
       ));
 
@@ -281,12 +241,35 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
         variant: "destructive",
       });
     }
-    setRejectDialog({ isOpen: false, id: null, reason: '' });
+    setRejectDialog({ isOpen: false, id: null, reason: '', field: 'content_status' });
   };
+
+  // Reusable Dialog Component
+  const RejectDialogComponent = () => (
+    <Dialog open={rejectDialog.isOpen} onOpenChange={(open) => setRejectDialog(prev => ({ ...prev, isOpen: open }))}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Motivo da Rejeição</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <Textarea
+            placeholder="Descreva o motivo da rejeição ou correções necessárias..."
+            value={rejectDialog.reason}
+            onChange={(e) => setRejectDialog(prev => ({ ...prev, reason: e.target.value }))}
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setRejectDialog({ isOpen: false, id: null, reason: '', field: 'content_status' })}>Cancelar</Button>
+          <Button variant="destructive" onClick={confirmReject}>Confirmar Rejeição</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 
   if (viewMode === 'contents') {
     return (
       <div className="space-y-6">
+        {/* ... (Header same as before) ... */}
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold">Aprovação de Conteúdo</h2>
           <div className="flex gap-2">
@@ -323,6 +306,7 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
             {filteredContents.map((content) => (
               <Card key={content.id} className="flex flex-col">
                 <CardContent className="p-4 space-y-4 flex-1">
+                  {/* ... (Card content details same as before) ... */}
                   <div className="flex justify-between items-start">
                     <div className="space-y-1">
                       <span className="text-xs text-muted-foreground block">
@@ -346,7 +330,6 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
                     </p>
                   </div>
 
-                  {/* Content Body / Art Text */}
                   <div className="space-y-1">
                     <Label className="text-xs text-muted-foreground">Texto da Arte</Label>
                     <div className="w-full min-h-[120px] bg-white dark:bg-zinc-900 rounded-md border p-3">
@@ -370,7 +353,6 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
                   </div>
 
                   <div className="flex gap-2 pt-2">
-                    {/* User Actions for Content Status */}
                     <div className="flex-1 flex gap-2">
                       <Button
                         className="flex-1 bg-green-600 hover:bg-green-700 text-white"
@@ -381,7 +363,7 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
                       <Button
                         variant="destructive"
                         className="flex-1"
-                        onClick={() => setRejectDialog({ isOpen: true, id: content.id, reason: '' })}
+                        onClick={() => setRejectDialog({ isOpen: true, id: content.id, reason: '', field: 'content_status' })}
                       >
                         Rejeitar
                       </Button>
@@ -403,24 +385,7 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
             ))}
           </div>
 
-          <Dialog open={rejectDialog.isOpen} onOpenChange={(open) => setRejectDialog(prev => ({ ...prev, isOpen: open }))}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Motivo da Rejeição</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <Textarea
-                  placeholder="Descreva o motivo da rejeição ou correções necessárias..."
-                  value={rejectDialog.reason}
-                  onChange={(e) => setRejectDialog(prev => ({ ...prev, reason: e.target.value }))}
-                />
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setRejectDialog({ isOpen: false, id: null, reason: '' })}>Cancelar</Button>
-                <Button variant="destructive" onClick={confirmReject}>Confirmar Rejeição</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <RejectDialogComponent />
         </>
         {filteredContents.length === 0 && (
           <div className="col-span-full text-center py-12 text-muted-foreground">
@@ -439,6 +404,7 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
         <CardDescription>Gerencie e aprove os temas propostos</CardDescription>
       </CardHeader>
       <CardContent>
+        {/* ... (Filter section same as before) ... */}
         <div className="mb-4 flex gap-2">
           {isAgency && (
             <Select value={selectedClient} onValueChange={setSelectedClient}>
@@ -461,13 +427,12 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
             </SelectTrigger>
             <SelectContent>
               {months.map((month) => (
-                <SelectItem key={month.value} value={month.value}>
-                  {month.label}
-                </SelectItem>
+                <SelectItem key={month.value} value={month.value}>{month.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
+
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -509,7 +474,7 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
                           size="sm"
                           variant="destructive"
                           className="h-7"
-                          onClick={() => handleStatusUpdate(content.id, 'approved_guidelines', 'rejeitado')}
+                          onClick={() => setRejectDialog({ isOpen: true, id: content.id, reason: '', field: 'approved_guidelines' })}
                         >
                           Reprovar
                         </Button>
@@ -535,6 +500,7 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
             </div>
           )}
         </div>
+        <RejectDialogComponent />
       </CardContent>
     </Card>
   );
