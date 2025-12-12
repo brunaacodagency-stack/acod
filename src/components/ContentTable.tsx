@@ -39,12 +39,41 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<string>("all");
+  const [selectedClient, setSelectedClient] = useState<string>("all");
+  const [clients, setClients] = useState<Array<{ id: string; email: string; display_name: string }>>([]);
   const { toast } = useToast();
   const { user, userProfile } = useAuth();
   const [rejectDialog, setRejectDialog] = useState<{ isOpen: boolean; id: string | null; reason: string }>({ isOpen: false, id: null, reason: '' });
 
   // Check if user has agency access
   const isAgency = userProfile?.role === 'agencia';
+
+  // Fetch clients list for agency users
+  useEffect(() => {
+    const fetchClients = async () => {
+      if (!isAgency) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('user_id, email, display_name')
+          .eq('role', 'cliente')
+          .order('email');
+
+        if (error) throw error;
+
+        setClients(data?.map(profile => ({
+          id: profile.user_id,
+          email: profile.email || 'Sem email',
+          display_name: profile.display_name || profile.email || 'Sem nome'
+        })) || []);
+      } catch (error: any) {
+        console.error('Error fetching clients:', error);
+      }
+    };
+
+    fetchClients();
+  }, [isAgency]);
 
   const fetchContents = async () => {
     if (!user) return;
@@ -58,8 +87,11 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
       if (!isAgency) {
         // Clients only see content assigned to them
         query = query.eq('client_id', user.id);
+      } else if (selectedClient !== 'all') {
+        // Agency can filter by specific client
+        query = query.eq('client_id', selectedClient);
       }
-      // Agency sees all content (or filtered by RLS)
+      // If agency and selectedClient is 'all', show all content
 
       const { data, error } = await query;
 
@@ -78,7 +110,7 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
 
   useEffect(() => {
     fetchContents();
-  }, [user, refreshTrigger]);
+  }, [user, refreshTrigger, selectedClient]);
 
   const handleStatusUpdate = async (id: string, field: string, value: string) => {
     try {
@@ -257,16 +289,33 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold">Aprovação de Conteúdo</h2>
-          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Filtrar por mês" />
-            </SelectTrigger>
-            <SelectContent>
-              {months.map((month) => (
-                <SelectItem key={month.value} value={month.value}>{month.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex gap-2">
+            {isAgency && (
+              <Select value={selectedClient} onValueChange={setSelectedClient}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Filtrar por cliente" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os clientes</SelectItem>
+                  {clients.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.display_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Filtrar por mês" />
+              </SelectTrigger>
+              <SelectContent>
+                {months.map((month) => (
+                  <SelectItem key={month.value} value={month.value}>{month.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <>
@@ -390,7 +439,22 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
         <CardDescription>Gerencie e aprove os temas propostos</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="mb-4">
+        <div className="mb-4 flex gap-2">
+          {isAgency && (
+            <Select value={selectedClient} onValueChange={setSelectedClient}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Filtrar por cliente" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os clientes</SelectItem>
+                {clients.map((client) => (
+                  <SelectItem key={client.id} value={client.id}>
+                    {client.display_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           <Select value={selectedMonth} onValueChange={setSelectedMonth}>
             <SelectTrigger className="w-48">
               <SelectValue placeholder="Filtrar por mês" />
