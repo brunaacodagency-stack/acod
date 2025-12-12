@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -254,6 +254,9 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Motivo da Rejeição</DialogTitle>
+          <DialogDescription>
+            Por favor, explique o motivo da rejeição para que a agência possa corrigir.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <Textarea
@@ -276,6 +279,9 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Observações & Histórico</DialogTitle>
+          <DialogDescription>
+            Histórico completo de observações e rejeições deste conteúdo.
+          </DialogDescription>
         </DialogHeader>
         <div className="py-4 max-h-[60vh] overflow-y-auto whitespace-pre-wrap text-sm">
           {viewObservationsDialog.content || "Nenhuma observação registrada."}

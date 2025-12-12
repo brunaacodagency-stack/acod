@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
 import ContentForm from "@/components/ContentForm";
 import ContentTable from "@/components/ContentTable";
@@ -99,6 +99,9 @@ const Index = () => {
                   <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Criar Novo Tema</DialogTitle>
+                      <DialogDescription>
+                        Preencha os dados abaixo para criar um novo tema.
+                      </DialogDescription>
                     </DialogHeader>
                     <ContentForm onSuccess={handleContentCreated} mode="theme" />
                   </DialogContent>
@@ -121,6 +124,9 @@ const Index = () => {
                   <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Criar Novo Conteúdo</DialogTitle>
+                      <DialogDescription>
+                        Adicione um novo conteúdo pronto para aprovação.
+                      </DialogDescription>
                     </DialogHeader>
                     <ContentForm onSuccess={handleContentCreated} mode="content" />
                   </DialogContent>
