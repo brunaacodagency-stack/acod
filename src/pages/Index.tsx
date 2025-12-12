@@ -63,7 +63,7 @@ const Index = () => {
               </p>
             </div>
             <div className="flex gap-2">
-              <UserManagement />
+              {isAgency && <UserManagement />}
               <Button variant="outline" onClick={handleSignOut}>
                 <LogOut className="mr-2 h-4 w-4" />
                 Sair
