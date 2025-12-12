@@ -157,12 +157,16 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
   };
 
   const filteredContents = contents.filter(content => {
-    // ... (same as before) ...
     const matchesMonth = selectedMonth === "all" || (new Date(content.date).getMonth() + 1).toString() === selectedMonth;
+
     if (viewMode === 'themes') {
-      return matchesMonth && content.approved_guidelines !== 'indefinido' && content.approved_guidelines !== null;
+      // Temas: Show ALL content so agency/client can track everything from the planning stage.
+      // Or filter as needed, but usually planning needs visibility of everything.
+      return matchesMonth;
     } else {
-      return matchesMonth && (content.approved_guidelines === 'indefinido' || content.approved_guidelines === null);
+      // Conteúdos: Show only content where the THEME has been APPROVED.
+      // This is the production phase.
+      return matchesMonth && content.approved_guidelines === 'aprovado';
     }
   });
 
@@ -188,7 +192,6 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
 
   // Helper to update caption - not used in this snippet but kept for consistency
   const handleCaptionUpdate = async (id: string, newCaption: string) => {
-    // ... (same as before) ...
     try {
       const { error } = await supabase.from('contents').update({ caption: newCaption }).eq('id', id);
       if (error) throw error;
@@ -372,19 +375,28 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
 
                   <div className="flex gap-2 pt-2">
                     <div className="flex-1 flex gap-2">
-                      <Button
-                        className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                        onClick={() => handleStatusUpdate(content.id, 'content_status', 'aprovado')}
-                      >
-                        Aprovar
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        className="flex-1"
-                        onClick={() => setRejectDialog({ isOpen: true, id: content.id, reason: '', field: 'content_status' })}
-                      >
-                        Rejeitar
-                      </Button>
+                      {!isAgency && (
+                        <>
+                          <Button
+                            className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                            onClick={() => handleStatusUpdate(content.id, 'content_status', 'aprovado')}
+                          >
+                            Aprovar
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            className="flex-1"
+                            onClick={() => setRejectDialog({ isOpen: true, id: content.id, reason: '', field: 'content_status' })}
+                          >
+                            Rejeitar
+                          </Button>
+                        </>
+                      )}
+                      {isAgency && (
+                        <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground border rounded bg-secondary/20">
+                          Aguardando Cliente
+                        </div>
+                      )}
                     </div>
 
                     {isAgency && (
@@ -481,22 +493,27 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant={content.approved_guidelines === 'aprovado' ? 'default' : 'outline'}
-                          className="h-7 bg-green-600 hover:bg-green-700 text-white"
-                          onClick={() => handleStatusUpdate(content.id, 'approved_guidelines', 'aprovado')}
-                        >
-                          Aprovar
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          className="h-7"
-                          onClick={() => setRejectDialog({ isOpen: true, id: content.id, reason: '', field: 'approved_guidelines' })}
-                        >
-                          Reprovar
-                        </Button>
+                        {!isAgency && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant={content.approved_guidelines === 'aprovado' ? 'default' : 'outline'}
+                              className="h-7 bg-green-600 hover:bg-green-700 text-white"
+                              onClick={() => handleStatusUpdate(content.id, 'approved_guidelines', 'aprovado')}
+                            >
+                              Aprovar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="h-7"
+                              onClick={() => setRejectDialog({ isOpen: true, id: content.id, reason: '', field: 'approved_guidelines' })}
+                            >
+                              Reprovar
+                            </Button>
+                          </>
+                        )}
+                        {/* If Agency, maybe show nothing or a static status, handled by logic above since agency only sees delete/edit usually */}
                       </div>
 
                       {/* View Observations Button */}
