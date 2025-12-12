@@ -399,7 +399,7 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
                           </Button>
                         </>
                       )}
-                      {isAgency && (
+                      {isAgency && ['pendente', 'em_producao', 'aguardando_aprovacao'].includes(content.content_status) && (
                         <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground border rounded bg-secondary/20">
                           Aguardando Cliente
                         </div>
@@ -520,7 +520,12 @@ const ContentTable = ({ refreshTrigger, viewMode = 'themes' }: ContentTableProps
                             </Button>
                           </>
                         )}
-                        {/* If Agency, maybe show nothing or a static status, handled by logic above since agency only sees delete/edit usually */}
+                        {/* If Agency, show waiting status if not approved/rejected */}
+                        {isAgency && (content.approved_guidelines !== 'aprovado' && content.approved_guidelines !== 'rejeitado') && (
+                          <span className="text-xs text-muted-foreground border px-2 py-1 rounded bg-secondary/20">
+                            Aguardando Aprovação
+                          </span>
+                        )}
                       </div>
 
                       {/* View Observations Button */}
